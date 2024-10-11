@@ -1,0 +1,111 @@
+Criar o banco de dados
+DROP DATABASE IF EXISTS sistema_vendas;
+CREATE DATABASE sistema_vendas;
+USE sistema_vendas;
+
+-- Passo 2: Criar a tabela de Clientes
+CREATE TABLE Clientes (
+    ClienteID INT AUTO_INCREMENT PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) UNIQUE,
+    Telefone VARCHAR(15)
+);
+
+-- Passo 3: Criar a tabela de Produtos
+CREATE TABLE Produtos (
+    ProdutoID INT AUTO_INCREMENT PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Preco DECIMAL(10, 2) NOT NULL,
+    QuantidadeEstoque INT NOT NULL
+);
+
+-- Passo 4: Criar a tabela de Vendas
+CREATE TABLE Vendas (
+    VendaID INT AUTO_INCREMENT PRIMARY KEY,
+    ClienteID INT,
+    ProdutoID INT,
+    QuantidadeVendida INT NOT NULL,
+    DataVenda DATE NOT NULL,
+    FOREIGN KEY (ClienteID) REFERENCES Clientes(ClienteID),
+    FOREIGN KEY (ProdutoID) REFERENCES Produtos(ProdutoID)
+);
+
+-- Passo 5: Inserir dados na tabela de Clientes
+INSERT INTO Clientes (Nome, Email, Telefone) VALUES
+('João da Silva', 'joao.silva@example.com', '1234-5678'),
+('Maria Oliveira', 'maria.oliveira@example.com', '2345-6789'),
+('Carlos Santos', 'carlos.santos@example.com', '3456-7890');
+
+-- Passo 6: Inserir dados na tabela de Produtos
+INSERT INTO Produtos (Nome, Preco, QuantidadeEstoque) VALUES
+('Produto A', 10.00, 100),
+('Produto B', 20.00, 50),
+('Produto C', 30.00, 25);
+
+-- Passo 7: Inserir dados na tabela de Vendas
+INSERT INTO Vendas (ClienteID, ProdutoID, QuantidadeVendida, DataVenda) VALUES
+(1, 1, 5, '2024-09-01'),
+(2, 2, 2, '2024-09-02'),
+(3, 1, 3, '2024-09-03'),
+(1, 3, 1, '2024-09-04'),
+(2, 1, 4, '2024-09-05');
+
+-- Consultas e Relatórios
+
+-- Consulta 1: Mostrar todas as vendas realizadas, incluindo o nome do cliente e o nome do produto
+SELECT 
+    Vendas.VendaID,
+    Clientes.Nome AS NomeCliente,
+    Produtos.Nome AS NomeProduto,
+    Vendas.QuantidadeVendida,
+    Vendas.DataVenda
+FROM Vendas
+JOIN Clientes ON Vendas.ClienteID = Clientes.ClienteID
+JOIN Produtos ON Vendas.ProdutoID = Produtos.ProdutoID;
+
+-- Consulta 2: Mostrar todas as compras realizadas por um cliente específico (por exemplo, ClienteID = 1)
+SELECT 
+    Vendas.VendaID,
+    Produtos.Nome AS NomeProduto,
+    Vendas.QuantidadeVendida,
+    Vendas.DataVenda
+FROM Vendas
+JOIN Produtos ON Vendas.ProdutoID = Produtos.ProdutoID
+WHERE Vendas.ClienteID = 1;
+
+-- Consulta 3: Exibir o total de vendas realizadas por produto
+SELECT 
+    Produtos.Nome AS NomeProduto,
+    SUM(Vendas.QuantidadeVendida) AS TotalVendida
+FROM Vendas
+JOIN Produtos ON Vendas.ProdutoID = Produtos.ProdutoID
+GROUP BY Produtos.Nome;
+
+-- Atualização e Deleção de Dados
+
+-- Atualizar o estoque de um produto após uma venda (por exemplo, ProdutoID = 1)
+UPDATE Produtos
+SET QuantidadeEstoque = QuantidadeEstoque - (
+    SELECT SUM(QuantidadeVendida)
+    FROM Vendas
+    WHERE ProdutoID = 1
+)
+WHERE ProdutoID = 1;
+
+-- Atualizar as informações de um cliente (por exemplo, ClienteID = 1)
+UPDATE Clientes
+SET Nome = 'João da Silva Atualizado', Email = 'joao.silva.atualizado@example.com'
+WHERE ClienteID = 1;
+
+-- Deletar uma venda e, se necessário, deletar o cliente associado (por exemplo, VendaID = 1)
+-- Primeiro, removemos a venda
+DELETE FROM Vendas
+WHERE VendaID = 1;
+
+-- Se o cliente não tiver outras vendas, você pode remover o cliente (opcional)
+DELETE FROM Clientes
+WHERE ClienteID = 1 AND NOT EXISTS (
+    SELECT 1
+    FROM Vendas
+    WHERE ClienteID = 1
+);
